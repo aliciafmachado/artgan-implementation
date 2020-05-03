@@ -13,7 +13,7 @@ from nn.Generator import zNet, Dec, Generator
 # create class and call training
 
 if __name__ == '__main__':
+    # TODO: import dataset and separate it in trainset and testset
     # fix constructor
     artgan = ArtGAN(Generator(), Discriminator())
-    # call training
-    #TODO
+    # TODO: call training
