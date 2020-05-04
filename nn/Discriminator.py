@@ -8,7 +8,11 @@ import numpy as np
 
 class clsNet(nn.Module):
     # Latent features is used for classification
-    def __init__(self, input_size=1024, num_classes=10):
+    def __init__(self, input_size=16384, num_classes=10):
+        """
+        :param input_size: size of the output torch array of the Encoder
+        :param num_classes: Classification into K classes
+        """
         super(clsNet, self).__init__()
 
         self.features = nn.Sequential(
@@ -24,7 +28,11 @@ class clsNet(nn.Module):
 class Enc(nn.Module):
     # Image is enconded via convolution
     # to latent features
-    def __init__(self, input_dim=1024, num_output=10):
+    def __init__(self, input_dim=3, size_output=16384):
+        """
+        :param input_dim: Dimension of the image (3 x 64 x 64)
+        :param size_output: size of the output torch array
+        """
         super(Enc, self).__init__()
 
         self.features = nn.Sequential(
@@ -45,7 +53,7 @@ class Enc(nn.Module):
         )
 
         self.linear = nn.Sequential(
-            nn.Linear(1024, num_output),
+            nn.Linear(1024, size_output),
             nn.Sigmoid()
         )
 
@@ -55,14 +63,23 @@ class Enc(nn.Module):
         x = self.linear(x)
         return x
 
+
 class Discriminator(nn.Module):
 
     def __init__(self, clsnet, enc):
+        """
+        :param clsnet: clsNet
+        :param enc: Encoder
+        """
         super(Discriminator, self).__init__()
         self.clsnet = clsnet
         self.enc = enc
 
     def forward(self, x):
+        """
+        :param x: Image 3 x 64 x 64
+        :return: TOrch array of size K (number of classes)
+        """
         out = self.clsnet(x)
         out = self.enc(out)
         return out
