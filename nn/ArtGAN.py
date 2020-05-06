@@ -83,6 +83,7 @@ class ArtGAN:
         # To evaluate how our net is learning
         fixed_noise = torch.randn(64, self.z_dim, 1, 1)
 
+        # TODO: save loss values (Better with pandas ?)
         for epoch in range(epochs):
 
             # import tqdm
