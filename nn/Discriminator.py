@@ -11,13 +11,13 @@ class clsNet(nn.Module):
     def __init__(self, input_size=16384, num_classes=10):
         """
         :param input_size: size of the output torch array of the Encoder
-        :param num_classes: Classification into K classes
+        :param num_classes: Classification into num_classes + 1 classes (the last one is a fake class)
         """
         super(clsNet, self).__init__()
 
         self.features = nn.Sequential(
-            nn.Linear(input_size, num_classes),
-            nn.BatchNorm2d(num_classes),
+            nn.Linear(input_size, num_classes+1),
+            nn.BatchNorm2d(num_classes+1),
             nn.ReLU,
         )
 
@@ -28,10 +28,10 @@ class clsNet(nn.Module):
 class Enc(nn.Module):
     # Image is enconded via convolution
     # to latent features
-    def __init__(self, input_dim=3, size_output=16384):
+    def __init__(self, input_dim=3, output_size=16384):
         """
         :param input_dim: Dimension of the image (3 x 64 x 64)
-        :param size_output: size of the output torch array
+        :param output_size: size of the output torch array
         """
         super(Enc, self).__init__()
 
@@ -53,7 +53,7 @@ class Enc(nn.Module):
         )
 
         self.linear = nn.Sequential(
-            nn.Linear(1024, size_output),
+            nn.Linear(1024 * 4 * 4, output_size),
             nn.Sigmoid()
         )
 
