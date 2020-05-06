@@ -105,7 +105,7 @@ class ArtGAN:
 
                 # calculate Y
                 y = self.D(x_r)
-                # calculate X_hat - I'm not quite sure if it's like that
+                # calculate X_hat
                 x_hat = self.G(z_hat, y_k)
                 # Calculate Y_hat
                 y_hat = self.D(x_hat)

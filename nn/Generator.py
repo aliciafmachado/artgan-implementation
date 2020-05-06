@@ -25,8 +25,9 @@ class zNet(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, x):
-        out = self.features(x)
+    def forward(self, z, y):
+        out = torch.cat([z, y], 1)
+        out = self.features(out)
         out = out.view(-1, self.output_dim, self.output_size, self.output_size)
         return out
 
