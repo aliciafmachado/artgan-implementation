@@ -78,8 +78,8 @@ class Discriminator(nn.Module):
     def forward(self, x):
         """
         :param x: Image 3 x 64 x 64
-        :return: TOrch array of size K (number of classes)
+        :return: Torch array of size K (number of classes)
         """
-        out = self.clsnet(x)
-        out = self.enc(out)
+        out = self.enc(x)
+        out = self.clsnet(out)
         return out
