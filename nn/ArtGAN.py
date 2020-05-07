@@ -66,8 +66,8 @@ class ArtGAN:
     @staticmethod
     def show_imgs(self, imgs):
         """
+        Function to show imgs
         :param imgs:
-        :return:
         """
         # 8 columns of imgs
         fig = plt.figure(fig_size=(8, 8))
@@ -112,7 +112,7 @@ class ArtGAN:
         :param batch_size: batch_size
         :param img_interval: interval for showing the images produced
         :param cuda: usage of gpu
-        :return: Loss list, accuracy list
+        :return: dataframe with loss and accuracy lists
         """
 
         # To evaluate how our net is learning
