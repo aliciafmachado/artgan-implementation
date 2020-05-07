@@ -4,8 +4,11 @@
 import torch
 import torch.nn as nn
 import utils
-from tqdm import tqdm
+import matplotlib.pyplot as plt
+import numpy as np
 
+from torchvision import transforms
+from tqdm import tqdm
 from nn.Discriminator import clsNet, Enc, Discriminator
 from nn.Generator import zNet, Dec, Generator
 
@@ -18,6 +21,7 @@ class ArtGAN:
                  z_dim=None,
                  num_classes=10,
                  out_dim_zNet=1024,
+                 img_interval=1
                  ):
         """
         ArtGAN constructor
@@ -55,15 +59,45 @@ class ArtGAN:
         self.BCE_loss = nn.BCELoss()
         self.MSE_loss = nn.MSELoss()
 
-    def show_imgs(self, epoch, fixed_noise=None):
+        # Produced images
+        self.evolution = []
+
+    @staticmethod
+    def show_imgs(self, imgs):
+        """
+        :param imgs:
+        :return:
+        """
+        # 8 columns of imgs
+        fig = plt.figure(fig_size=(8, 8))
+        lines = len(imgs) / 8
+        plt.axix("off")
+        i = 0
+        j = 0
+        for img in imgs:
+            fig.add_subplot(lines, 8, i * 8 + j + 1)
+            plt.imshow(img)
+            j = j + 1
+            if j == 8:
+                j = 0
+                i += 1
+        plt.show()
+
+    def update_evolution(self, fixed_noise=None):
         """
         Function to produce images from our nn
-        :param epoch: in which epoch we are
-        :param quantity: quantity of images to be produces
-        :return: images produced by the nn
+        :param fixed_noise: noise used to see the evolution of our nn
         """
-        # TODO
-        pass
+        toPIL = transforms.ToPILImage()
+
+        if(fixed_noise == None):
+            noise = fixed_noise = torch.randn(64, self.z_dim, 1, 1)
+        else:
+            noise = fixed_noise
+
+        img = self.G(fixed_noise)
+        img = toPIL(img)
+        self.evolution.append(img)
 
     def train(self, trainloader, testloader, epochs=10,
               img_interval=20, batch_size=128, cuda=True):
@@ -131,7 +165,12 @@ class ArtGAN:
 
                 self.opt_G.step()
 
-            # TODO: Calculate and show loss and accuracy values as well as put them
-            # TODO: in a list to be shown
-            # TODO: how to use the testloader? I think that it may be see if dis can
-            # TODO: know how is fake and how is not...
+                # TODO: Calculate and show loss and accuracy values as well as put them
+                # TODO: in a list to be shown
+                # TODO: how to use the testloader? I think that it may be see if dis can
+                # TODO: know how is fake and how is not...
+
+            if epoch % img_interval == 0:
+                self.update_evolution(fixed_noise)
+
+        self.show_imgs(self.evolution)
