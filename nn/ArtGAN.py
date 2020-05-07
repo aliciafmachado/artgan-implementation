@@ -21,8 +21,7 @@ class ArtGAN:
                  input_dim_enc=3,
                  z_dim=None,
                  num_classes=10,
-                 out_dim_zNet=1024,
-                 img_interval=1
+                 out_dim_zNet=1024
                  ):
         """
         ArtGAN constructor
@@ -37,7 +36,7 @@ class ArtGAN:
         self.input_dim_enc = input_dim_enc # usually 3
         self.num_classes = num_classes
         self.out_dim_zNet = out_dim_zNet
-        self.out_size_zNet = self.img_size/2**4
+        self.out_size_zNet = int(self.img_size/2**4)
         self.z_dim = z_dim
         self.out_size_enc = self.out_dim_zNet * self.out_size_zNet ** 2
         if z_dim is None:
@@ -101,7 +100,7 @@ class ArtGAN:
         self.evolution.append(img)
 
     def train(self, trainloader, testloader, epochs=10,
-              img_interval=20, batch_size=128, cuda=True):
+              img_interval=1, batch_size=128, cuda=True):
         """
         Training function
         :param optimizers: used optimizers (2 entries)
@@ -169,6 +168,7 @@ class ArtGAN:
                 self.opt_G.step()
 
                 # TODO: Should we not take all the losses like the training for the tds?
+
                 loss_list_g.append(g_loss)
                 loss_list_d.append(d_loss)
 

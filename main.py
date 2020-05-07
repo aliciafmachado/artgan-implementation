@@ -5,13 +5,38 @@ import torch
 import torch.nn as nn
 import numpy as np
 import random
+import torchvision
+
 from pathlib import Path
 from torchvision import transforms, utils
 
 from nn.ArtGAN import ArtGAN
-from nn.Discriminator import clsNet, Enc, Discriminator
-from nn.Generator import zNet, Dec, Generator
 from WikiartDataset import WikiartDataset
+
+
+def test_cifar_10():
+
+    transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,)),
+        ])
+
+    batch_size = 128
+
+    print("Importing data")
+    # Change root
+    trainset = torchvision.datasets.CIFAR10(root="./data", train=True, transform=transform, download=True)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=False, num_workers=2)
+
+    testset = torchvision.datasets.CIFAR10(root="./data", train=False, transform=transform, download=True)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=2)
+
+    print("Creating the class")
+    artgan = ArtGAN(img_size=32, num_classes=1000)
+
+    print("Training the class")
+    df = artgan.train(trainloader, testloader, epochs=5, img_interval=1, cuda=False)
 
 if __name__ == '__main__':
 
@@ -22,7 +47,5 @@ if __name__ == '__main__':
 
     # Local path
     path = Path().absolute()
-    # TODO: import dataset and separate it in trainset and testset
-    # fix constructor
-    # artgan = ArtGAN(Generator(), Discriminator())
-    # TODO: call training
+    test_cifar_10()
+    print("Ended!")

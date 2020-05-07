@@ -18,7 +18,7 @@ class clsNet(nn.Module):
         self.features = nn.Sequential(
             nn.Linear(input_size, num_classes+1),
             nn.BatchNorm2d(num_classes+1),
-            nn.ReLU,
+            nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
