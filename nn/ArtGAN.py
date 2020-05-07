@@ -6,6 +6,7 @@ import torch.nn as nn
 import utils
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from torchvision import transforms
 from tqdm import tqdm
@@ -116,7 +117,9 @@ class ArtGAN:
 
         # To evaluate how our net is learning
         fixed_noise = torch.randn(64, self.z_dim, 1, 1)
-
+        loss_list_g = []
+        loss_list_d = []
+        # TODO: Accuracy
         # TODO: save loss values (Better with pandas ?)
         for epoch in range(epochs):
 
@@ -165,12 +168,21 @@ class ArtGAN:
 
                 self.opt_G.step()
 
-                # TODO: Calculate and show loss and accuracy values as well as put them
-                # TODO: in a list to be shown
+                # TODO: Should we not take all the losses like the training for the tds?
+                loss_list_g.append(g_loss)
+                loss_list_d.append(d_loss)
+
                 # TODO: how to use the testloader? I think that it may be see if dis can
                 # TODO: know how is fake and how is not...
 
             if epoch % img_interval == 0:
                 self.update_evolution(fixed_noise)
 
+        d = {'Generator Loss': loss_list_g, 'Discriminator Loss': loss_list_d}
+        # TODO: accuracy
+
+        df = pd.DataFrame(data=d)
+
         self.show_imgs(self.evolution)
+
+        return df
