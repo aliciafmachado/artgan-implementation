@@ -17,8 +17,6 @@ class clsNet(nn.Module):
 
         self.features = nn.Sequential(
             nn.Linear(input_size, num_classes+1),
-            nn.BatchNorm2d(num_classes+1),
-            nn.ReLU,
         )
 
     def forward(self, x):
@@ -54,7 +52,7 @@ class Enc(nn.Module):
 
         self.linear = nn.Sequential(
             nn.Linear(1024 * 4 * 4, output_size),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
 
     def forward(self, x):

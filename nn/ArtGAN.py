@@ -31,15 +31,14 @@ class ArtGAN:
         :param z_dim:
         :param num_classes:
         """
-        super(ArtGAN, self).__init__()
         # Inputs
         self.img_size = img_size
         self.input_dim_enc = input_dim_enc # usually 3
         self.num_classes = num_classes
         self.out_dim_zNet = out_dim_zNet
-        self.out_size_zNet = self.img_size/2**4
+        self.out_size_zNet = int(self.img_size/2**4)-3
         self.z_dim = z_dim
-        self.out_size_enc = self.out_dim_zNet * self.out_size_zNet ** 2
+        self.out_size_enc = int(self.out_dim_zNet * self.out_size_zNet ** 2)
         if z_dim is None:
             self.z_dim = self.out_size_enc - self.num_classes
 
@@ -57,11 +56,16 @@ class ArtGAN:
         self.opt_G = torch.optim.Adadelta(self.G.parameters(), lr=0.001, rho=0.9, eps=1e-06, weight_decay=0)
 
         # Loss functions
-        self.BCE_loss = nn.BCELoss()
+        self.loss = nn.CrossEntropyLoss()
         self.MSE_loss = nn.MSELoss()
 
         # Produced images
         self.evolution = []
+
+    def cuda(self):
+
+        self.D.cuda()
+        self.G.cuda()
 
     @staticmethod
     def show_imgs(self, imgs):
@@ -125,43 +129,46 @@ class ArtGAN:
 
             # import tqdm
             for i, data in enumerate(tqdm(trainloader), 0):
-                # zero grad
-                self.opt_D.zero_grad()
-                self.opt_G.zero_grad()
                 # get the inputs
                 x_r, k = data
                 # generate z_hat
                 z_hat = utils.gen_z(batch_size, self.z_dim)
-                # generate Y_k
-                y_k = utils.gen_yk(batch_size, self.num_classes)
+                # generate Y_k and its label
+                l_y_k, y_k = utils.gen_yk(batch_size, self.num_classes)
+                # Fake Y
+                y_fake = utils.fake_v(batch_size, self.num_classes)
                 if cuda:
                     x_r = x_r.type(torch.cuda.FloatTensor)
                     k = k.type(torch.cuda.LongTensor)
                     z_hat = z_hat.type(torch.cuda.FloatTensor)
                     y_k = y_k.type(torch.cuda.LongTensor)
-
+                    y_fake = y_fake.type(torch.cuda.LongTensor)
+                    l_y_k = l_y_k.type(torch.cuda.LongTensor)
                 # calculate Y
                 y = self.D(x_r)
                 # calculate X_hat
-                x_hat = self.G(z_hat, y_k)
+                in_G = torch.cat([z_hat, y_k.type(torch.cuda.FloatTensor)], 1)
+                x_hat = self.G(in_G)
                 # Calculate Y_hat
                 y_hat = self.D(x_hat)
-                # Fake Y
-                y_fake = utils.fake_v(batch_size, self.num_classes)
                 # update D
-                d_real_loss = self.BCE_loss(y, k)
-                d_fake_loss = self.BCE_loss(y_hat, y_fake)
+                self.opt_D.zero_grad()
+
+                d_real_loss = self.loss(y, k)
+                d_fake_loss = self.loss(y_hat, y_fake)
                 d_loss = d_real_loss + d_fake_loss
-                d_loss.backward()
+                d_loss.backward(retain_graph=True)
 
                 self.opt_D.step()
 
                 # calculate Z
                 z = self.enc(x_r)
+                z = z.view(-1, self.out_dim_zNet, self.out_size_zNet, self.out_size_zNet)
                 # calculate X_hat_z
                 x_hat_z = self.dec(z)
                 # update G
-                g_loss_adv = self.BCE_loss(y_hat, y_k)
+                self.opt_G.zero_grad()
+                g_loss_adv = self.loss(y_hat, y_k)
                 g_loss_l2 = self.MSE_loss(x_hat_z, x_r)
                 g_loss = g_loss_adv + g_loss_l2
                 g_loss.backward()

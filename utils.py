@@ -21,11 +21,13 @@ def gen_yk(batch_size, num_classes):
     :param num_classes:
     :return:
     """
-    v = torch.zeros(batch_size, num_classes)
-    for row in v:
+    t = torch.zeros(batch_size, num_classes)
+    l = torch.zeros(batch_size)
+    for i, row in enumerate(t):
         num = random.randint(0, num_classes - 1)
         row[num] = 1
-    return v
+        l[i] = num
+    return l, t
 
 
 def fake_v(batch_size, num_classes):
@@ -35,8 +37,7 @@ def fake_v(batch_size, num_classes):
     :param num_classes:
     :return:
     """
-    v = torch.zeros(batch_size, num_classes + 1)
-    v[:, -1] = 1
+    v = torch.zeros(batch_size) + num_classes
     return v
 
 
