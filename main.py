@@ -38,6 +38,7 @@ def test_cifar_10():
     print("Training the class")
     df = artgan.train(trainloader, testloader, epochs=5, img_interval=1, cuda=False)
 
+
 if __name__ == '__main__':
 
     # We set random seed so it's reproducible

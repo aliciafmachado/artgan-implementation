@@ -5,38 +5,19 @@ import numpy as np
 
 
 def gen_z(batch_size, d):
-    """
-    Produces a batch of random normal vectors
-    :param batch_size: batch_size
-    :param d: size of the normal vector
-    :return: batch of random normal vectors
-    """
-    return torch.rand(batch_size, d)
+    return torch.randn(batch_size, d)
 
 
 def gen_yk(batch_size, num_classes):
-    """
-
-    :param batch_size:
-    :param num_classes:
-    :return:
-    """
     t = torch.zeros(batch_size, num_classes)
-    l = torch.zeros(batch_size)
     for i, row in enumerate(t):
         num = random.randint(0, num_classes - 1)
+        # num = i % num_classes
         row[num] = 1
-        l[i] = num
-    return l, t
+    return t
 
 
 def fake_v(batch_size, num_classes):
-    """
-
-    :param batch_size:
-    :param num_classes:
-    :return:
-    """
     v = torch.zeros(batch_size) + num_classes
     return v
 

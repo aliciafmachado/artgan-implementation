@@ -7,7 +7,7 @@ import utils
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
+import torch.nn.functional as F
 from torchvision import transforms
 from tqdm import tqdm
 from nn.Discriminator import clsNet, Enc, Discriminator
@@ -19,10 +19,9 @@ class ArtGAN:
     def __init__(self,
                  img_size=64,
                  input_dim_enc=3,
-                 z_dim=None,
+                 z_dim=100,
                  num_classes=10,
                  out_dim_zNet=1024,
-                 img_interval=1
                  ):
         """
         ArtGAN constructor
@@ -33,79 +32,33 @@ class ArtGAN:
         """
         # Inputs
         self.img_size = img_size
-        self.input_dim_enc = input_dim_enc # usually 3
+        self.input_dim_enc = input_dim_enc  # usually 3
         self.num_classes = num_classes
         self.out_dim_zNet = out_dim_zNet
-        self.out_size_zNet = int(self.img_size/2**4)-3
+        self.out_size_zNet = int(self.img_size / 2 ** 4)
         self.z_dim = z_dim
         self.out_size_enc = int(self.out_dim_zNet * self.out_size_zNet ** 2)
         if z_dim is None:
             self.z_dim = self.out_size_enc - self.num_classes
-
         # Nets
         self.znet = zNet(input_size=self.z_dim + self.num_classes,
                          output_size=self.out_size_zNet, output_dim=self.out_dim_zNet)
         self.clsnet = clsNet(input_size=self.out_size_enc, num_classes=self.num_classes)
-        self.enc = Enc(input_dim=self.input_dim_enc, output_size=self.out_size_enc)
+        self.enc = Enc(input_dim=self.input_dim_enc)
         self.dec = Dec(input_dim=self.out_dim_zNet)
         self.D = Discriminator(self.clsnet, self.enc)
         self.G = Generator(self.znet, self.dec)
 
-        # Optimisers
-        self.opt_D = torch.optim.Adadelta(self.D.parameters(), lr=0.001, rho=0.9, eps=1e-06, weight_decay=0)
-        self.opt_G = torch.optim.Adadelta(self.G.parameters(), lr=0.001, rho=0.9, eps=1e-06, weight_decay=0)
-
         # Loss functions
-        self.loss = nn.CrossEntropyLoss()
         self.MSE_loss = nn.MSELoss()
-
-        # Produced images
-        self.evolution = []
 
     def cuda(self):
 
         self.D.cuda()
         self.G.cuda()
 
-    @staticmethod
-    def show_imgs(self, imgs):
-        """
-        Function to show imgs
-        :param imgs:
-        """
-        # 8 columns of imgs
-        fig = plt.figure(fig_size=(8, 8))
-        lines = len(imgs) / 8
-        plt.axix("off")
-        i = 0
-        j = 0
-        for img in imgs:
-            fig.add_subplot(lines, 8, i * 8 + j + 1)
-            plt.imshow(img)
-            j = j + 1
-            if j == 8:
-                j = 0
-                i += 1
-        plt.show()
-
-    def update_evolution(self, fixed_noise=None):
-        """
-        Function to produce images from our nn
-        :param fixed_noise: noise used to see the evolution of our nn
-        """
-        toPIL = transforms.ToPILImage()
-
-        if(fixed_noise == None):
-            noise = fixed_noise = torch.randn(64, self.z_dim, 1, 1)
-        else:
-            noise = fixed_noise
-
-        img = self.G(fixed_noise)
-        img = toPIL(img)
-        self.evolution.append(img)
-
     def train(self, trainloader, testloader, epochs=10,
-              img_interval=20, batch_size=128, cuda=True):
+              img_interval=1, batch_size=64, cuda=True):
         """
         Training function
         :param optimizers: used optimizers (2 entries)
@@ -116,80 +69,92 @@ class ArtGAN:
         :param batch_size: batch_size
         :param img_interval: interval for showing the images produced
         :param cuda: usage of gpu
-        :return: dataframe with loss and accuracy lists
+        :return: Loss list, accuracy list
         """
 
+        lr_init = 0.001
+
+        g_opt = torch.optim.RMSprop(self.G.parameters(), lr=lr_init, alpha=0.9)
+        d_opt = torch.optim.RMSprop(self.D.parameters(), lr=lr_init, alpha=0.9)
+
         # To evaluate how our net is learning
-        fixed_noise = torch.randn(64, self.z_dim, 1, 1)
-        loss_list_g = []
-        loss_list_d = []
-        # TODO: Accuracy
-        # TODO: save loss values (Better with pandas ?)
+        fixed_noise = utils.gen_z(1, self.z_dim)
+        y_k_fixed = utils.gen_yk(1, self.num_classes)
+
+        g_loss_l = []
+        d_loss_l = []
         for epoch in range(epochs):
+
+            # Decay in the learning rate
+            d_opt = utils.exp_lr_scheduler(d_opt, epoch)
+            g_opt = utils.exp_lr_scheduler(g_opt, epoch)
 
             # import tqdm
             for i, data in enumerate(tqdm(trainloader), 0):
+
+                # zero grad
+                d_opt.zero_grad()
                 # get the inputs
                 x_r, k = data
+                b_s = len(k)
                 # generate z_hat
-                z_hat = utils.gen_z(batch_size, self.z_dim)
+                z_hat = utils.gen_z(b_s, self.z_dim)
+                # print("z_hat = ", z_hat.size())
                 # generate Y_k and its label
-                l_y_k, y_k = utils.gen_yk(batch_size, self.num_classes)
-                # Fake Y
-                y_fake = utils.fake_v(batch_size, self.num_classes)
+                y_k = utils.gen_yk(b_s, self.num_classes)
+                # print("y_k = ", y_k.size())
+                # gen fakes
+                y_fake = utils.fake_v(b_s, self.num_classes)
+                # print("y_fake = ", y_fake.size())
                 if cuda:
+                    y_k = y_k.type(torch.cuda.FloatTensor)
                     x_r = x_r.type(torch.cuda.FloatTensor)
                     k = k.type(torch.cuda.LongTensor)
                     z_hat = z_hat.type(torch.cuda.FloatTensor)
-                    y_k = y_k.type(torch.cuda.LongTensor)
-                    y_fake = y_fake.type(torch.cuda.LongTensor)
-                    l_y_k = l_y_k.type(torch.cuda.LongTensor)
-                # calculate Y
-                y = self.D(x_r)
+                    y_k = y_k.type(torch.cuda.FloatTensor)
                 # calculate X_hat
                 in_G = torch.cat([z_hat, y_k.type(torch.cuda.FloatTensor)], 1)
-                x_hat = self.G(in_G)
+                k_hot = F.one_hot(k, self.num_classes + 1)
+                # print("k_hot = ", k_hot.size())
+                y_k_hot = F.one_hot(y_fake.type(torch.int64), self.num_classes + 1)
+                # print("y_k_hot = ", y_k_hot.size())
+                # calculate Y
+                y = self.D(x_r)
                 # Calculate Y_hat
+                x_hat = self.G(in_G)
                 y_hat = self.D(x_hat)
                 # update D
-                self.opt_D.zero_grad()
-
-                d_real_loss = self.loss(y, k)
-                d_fake_loss = self.loss(y_hat, y_fake)
+                d_real_loss = F.binary_cross_entropy(y, k_hot.type(torch.cuda.FloatTensor))
+                d_fake_loss = F.binary_cross_entropy(y_hat, y_k_hot.type(torch.cuda.FloatTensor))
                 d_loss = d_real_loss + d_fake_loss
+                d_loss_l.append(d_loss.item())
                 d_loss.backward(retain_graph=True)
+                d_opt.step()
 
-                self.opt_D.step()
+                # zero grad
+                g_opt.zero_grad()
 
-                # calculate Z
-                z = self.enc(x_r)
-                z = z.view(-1, self.out_dim_zNet, self.out_size_zNet, self.out_size_zNet)
+                # adversarial loss
+                new_y_hat = self.D(x_hat)
+                # print("new_y_hat = ", new_y_hat.size())
+                new_y_k_hot = torch.cat(
+                    [y_k.type(torch.cuda.FloatTensor), torch.zeros(b_s, 1).type(torch.cuda.FloatTensor)], 1)
+                # print("new_y_k_hot = ", new_y_k_hot.size())
+                g_loss_adv = F.binary_cross_entropy(new_y_hat, new_y_k_hot)
+
+                # L2 loss
+                # calculate z
+                z = self.D.enc(x_r)
+                # print("z = ", z.size())
                 # calculate X_hat_z
-                x_hat_z = self.dec(z)
-                # update G
-                self.opt_G.zero_grad()
-                g_loss_adv = self.loss(y_hat, y_k)
-                g_loss_l2 = self.MSE_loss(x_hat_z, x_r)
-                g_loss = g_loss_adv + g_loss_l2
+                x_hat_z = self.G.dec(z)
+                g_loss_l2 = torch.mean((x_hat_z - x_r) ** 2)
+
+                # + g_loss_adv
+                g_loss = g_loss_l2 + g_loss_adv
                 g_loss.backward()
+                g_loss_l.append(g_loss.item())
+                g_opt.step()
 
-                self.opt_G.step()
+        return d_loss_l, g_loss_l
 
-                # TODO: Should we not take all the losses like the training for the tds?
-                loss_list_g.append(g_loss)
-                loss_list_d.append(d_loss)
-
-                # TODO: how to use the testloader? I think that it may be see if dis can
-                # TODO: know how is fake and how is not...
-
-            if epoch % img_interval == 0:
-                self.update_evolution(fixed_noise)
-
-        d = {'Generator Loss': loss_list_g, 'Discriminator Loss': loss_list_d}
-        # TODO: accuracy
-
-        df = pd.DataFrame(data=d)
-
-        self.show_imgs(self.evolution)
-
-        return df

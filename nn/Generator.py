@@ -9,7 +9,7 @@ import numpy as np
 
 class zNet(nn.Module):
     # Where dense code is transformed to latent code
-    def __init__(self, input_size=1024, output_size=1, output_dim=1024):
+    def __init__(self, input_size=100, output_size=1, output_dim=1024):
         """
         zNet Constructor
         :param input_size: size of Y + Z
@@ -20,14 +20,12 @@ class zNet(nn.Module):
         super(zNet, self).__init__()
         self.output_size = output_size
         self.output_dim = output_dim
-        self.features = nn.Sequential(
-            nn.Linear(input_size, output_size**2 * output_dim),
-            nn.ReLU(inplace=True),
-        )
+        self.bn1 = nn.BatchNorm2d(1024)
+        self.deconv1 = nn.ConvTranspose2d(110, 1024, 4, stride=1, padding=0)
 
     def forward(self, x):
-        out = self.features(x)
-        out = out.view(-1, self.output_dim, self.output_size, self.output_size)
+        out = x.view(-1, 110, 1, 1)
+        out = F.relu(self.bn1(self.deconv1(out)))
         return out
 
 
@@ -41,8 +39,6 @@ class Dec(nn.Module):
         """
         super(Dec, self).__init__()
 
-        self.deconv1 = nn.ConvTranspose2d(input_dim, 1024, 4, stride=1, padding=0)
-        self.bn1 = nn.BatchNorm2d(1024)
         self.deconv2 = nn.ConvTranspose2d(1024, 512, 4, stride=2, padding=1)
         self.bn2 = nn.BatchNorm2d(512)
         self.deconv3 = nn.ConvTranspose2d( 512, 256, 4, stride=2, padding=1)
@@ -54,7 +50,6 @@ class Dec(nn.Module):
         self.deconv6 = nn.ConvTranspose2d( 128,   3, 4, stride=2, padding=1)
 
     def forward(self, x):
-        x = F.relu(self.bn1(self.deconv1(x)))
         x = F.relu(self.bn2(self.deconv2(x)))
         x = F.relu(self.bn3(self.deconv3(x)))
         x = F.relu(self.bn4(self.deconv4(x)))
