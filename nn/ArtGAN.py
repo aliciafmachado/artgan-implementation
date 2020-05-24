@@ -22,7 +22,8 @@ class ArtGAN:
                  z_dim=100,
                  num_classes=10,
                  out_dim_zNet=1024,
-                 ):
+                 G=None,
+                 D=None):
         """
         ArtGAN constructor
         :param img_size:
@@ -30,27 +31,38 @@ class ArtGAN:
         :param z_dim:
         :param num_classes:
         """
-        # Inputs
-        self.img_size = img_size
-        self.input_dim_enc = input_dim_enc  # usually 3
-        self.num_classes = num_classes
-        self.out_dim_zNet = out_dim_zNet
-        self.out_size_zNet = int(self.img_size / 2 ** 4)
-        self.z_dim = z_dim
-        self.out_size_enc = int(self.out_dim_zNet * self.out_size_zNet ** 2)
-        if z_dim is None:
-            self.z_dim = self.out_size_enc - self.num_classes
-        # Nets
-        self.znet = zNet(input_size=self.z_dim + self.num_classes,
-                         output_size=self.out_size_zNet, output_dim=self.out_dim_zNet)
-        self.clsnet = clsNet(input_size=self.out_size_enc, num_classes=self.num_classes)
-        self.enc = Enc(input_dim=self.input_dim_enc)
-        self.dec = Dec(input_dim=self.out_dim_zNet)
-        self.D = Discriminator(self.clsnet, self.enc)
-        self.G = Generator(self.znet, self.dec)
+        if G is None and D is None:
+            # Inputs
+            self.img_size = img_size
+            self.input_dim_enc = input_dim_enc  # usually 3
+            self.num_classes = num_classes
+            self.out_dim_zNet = out_dim_zNet
+            self.out_size_zNet = int(self.img_size / 2 ** 4)
+            self.z_dim = z_dim
+            self.out_size_enc = int(self.out_dim_zNet * self.out_size_zNet ** 2)
+            if z_dim is None:
+                self.z_dim = self.out_size_enc - self.num_classes
+            # Nets
+            self.znet = zNet(input_size=self.z_dim + self.num_classes)
+            self.clsnet = clsNet(num_classes=self.num_classes)
+            self.enc = Enc()
+            self.dec = Dec()
+            self.D = Discriminator(self.clsnet, self.enc)
+            self.G = Generator(self.znet, self.dec)
 
-        # Loss functions
-        self.MSE_loss = nn.MSELoss()
+        else:
+            # Inputs
+            self.img_size = img_size
+            self.input_dim_enc = input_dim_enc  # usually 3
+            self.num_classes = num_classes
+            self.out_dim_zNet = out_dim_zNet
+            self.out_size_zNet = int(self.img_size / 2 ** 4)
+            self.z_dim = z_dim
+            self.out_size_enc = int(self.out_dim_zNet * self.out_size_zNet ** 2)
+            if z_dim is None:
+                self.z_dim = self.out_size_enc - self.num_classes
+            self.G = G
+            self.D = D
 
     def cuda(self):
 
@@ -77,13 +89,14 @@ class ArtGAN:
         g_opt = torch.optim.RMSprop(self.G.parameters(), lr=lr_init, alpha=0.9)
         d_opt = torch.optim.RMSprop(self.D.parameters(), lr=lr_init, alpha=0.9)
 
-        # To evaluate how our net is learning
-        fixed_noise = utils.gen_z(1, self.z_dim)
-        y_k_fixed = utils.gen_yk(1, self.num_classes)
+        pd_loss = pd.DataFrame(columns=['epoch', 'd_loss', 'g_loss'])
+        path_loss = "num_folder/loss/loss.csv"
+        pd_loss.to_csv(path_loss, index=False)
 
-        g_loss_l = []
-        d_loss_l = []
         for epoch in range(epochs):
+            # Save loss
+            g_loss_l = []
+            d_loss_l = []
 
             # Decay in the learning rate
             d_opt = utils.exp_lr_scheduler(d_opt, epoch)
@@ -155,6 +168,22 @@ class ArtGAN:
                 g_loss.backward()
                 g_loss_l.append(g_loss.item())
                 g_opt.step()
+
+            d = {'epoch': epoch, 'd_loss': d_loss_l, 'g_loss': g_loss_l}
+            pd_loss = pd.read_csv(path_loss)
+            pd_loss = pd_loss.append(pd.DataFrame(data=d), ignore_index=True)
+            pd_loss.to_csv(path_loss, index=False)
+
+            # print image
+            if ((epoch + 1) % img_interval == 0):
+                utils.save_img(self.G, self.D, epoch)
+                name_net = "Wikiart_net/nn_" + str(epoch) + ".pt"
+                torch.save({'epoch': epoch,
+                            'G': self.G.state_dict(),
+                            'D': self.D.state_dict(),
+                            'opt_G': g_opt.state_dict(),
+                            'opt_D': d_opt.state_dict(),
+                            }, name_net)
 
         return d_loss_l, g_loss_l
 

@@ -3,7 +3,6 @@
 
 import torch
 import torch.nn as nn
-import numpy as np
 
 
 class clsNet(nn.Module):
@@ -15,13 +14,20 @@ class clsNet(nn.Module):
         """
         super(clsNet, self).__init__()
 
+        self.features = nn.Sequential(
+            nn.Conv2d(512, 1024, 4, stride=2, padding=1),
+            nn.BatchNorm2d(1024),
+            nn.LeakyReLU(0.2, inplace=True)
+        )
+
         self.linear = nn.Sequential(
-            nn.Linear(input_size, num_classes+1),
+            nn.Linear(16384, num_classes + 1),
             nn.Sigmoid()
         )
 
     def forward(self, x):
-        out = x.view(x.size(0), -1)
+        out = self.features(out)
+        out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out
 
@@ -29,15 +35,12 @@ class clsNet(nn.Module):
 class Enc(nn.Module):
     # Image is enconded via convolution
     # to latent features
-    def __init__(self, input_dim=3):
-        """
-        :param input_dim: Dimension of the image (3 x 64 x 64)
-        :param output_size: size of the output torch array
-        """
+    def __init__(self):
+
         super(Enc, self).__init__()
 
         self.features = nn.Sequential(
-            nn.Conv2d(input_dim, 128, 4, stride=2, padding=1),
+            nn.Conv2d(3, 128, 4, stride=2, padding=1),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(128, 128, 3, stride=1, padding=1),
             nn.BatchNorm2d(128),
@@ -47,9 +50,6 @@ class Enc(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(256, 512, 4, stride=2, padding=1),
             nn.BatchNorm2d(512),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(512, 1024, 4, stride=2, padding=1),
-            nn.BatchNorm2d(1024),
             nn.LeakyReLU(0.2, inplace=True)
         )
 

@@ -17,6 +17,10 @@ def gen_yk(batch_size, num_classes):
     return t
 
 
+def gen_noise(batch_size, epoch):
+  return torch.normal(0.0, 0.1/(epoch+1), (batch_size, 3, 64, 64))
+
+
 def fake_v(batch_size, num_classes):
     v = torch.zeros(batch_size) + num_classes
     return v
@@ -33,3 +37,44 @@ def exp_lr_scheduler(optimizer, epoch, init_lr=0.001, lr_decay_epoch=80):
         param_group['lr'] = lr
 
     return optimizer
+
+
+def gen_y_test(test_num=10):
+    # defined only for multiple of 10
+    z = torch.randn(test_num, 100)
+    y = torch.zeros(test_num, 10)
+    l = []
+    for i, row in enumerate(y):
+        row[i % 10] = 1
+        l.append(i % 10)
+    return torch.cat([z, y], 1).type(torch.cuda.FloatTensor), l
+
+
+def save_img(G, D, epoch, test_num=20):
+    G.eval()
+    D.eval()
+    path_img = "../wikiart/num_folder/images/epoch_" + str(epoch)
+    if not os.path.exists(path_img):
+        os.makedirs(path_img)
+
+    y, l = gen_y_test(test_num=test_num)
+    imgs = G(y)
+    output = D(imgs)
+    probs, predicted = torch.max(output.data, 1)
+
+    z = zip(l, imgs, probs, predicted)
+    for i, values in enumerate(z):
+        label, img_solo, p, pred = values
+        print()
+        print("Image %d" % i)
+        npimg = img_solo.cpu().detach().numpy()
+        plt.imshow(np.transpose(npimg, (1, 2, 0)))
+        plt.axis('off')
+        path_img_save = path_img + "/Image_" + str(i) + "_" + classes[label] + "_" + classes[pred.item()] + ".jpg"
+        plt.savefig(path_img_save)
+        plt.show()
+        print("label = {} ({})".format(classes[label], label))
+        print("Calculated label by D = {} ({}) -> Prob = {:02.1f}".format(classes[pred.item()], pred.item(), 100 * p))
+
+    G.train()
+    D.train()
