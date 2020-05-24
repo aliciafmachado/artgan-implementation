@@ -90,7 +90,7 @@ class ArtGAN:
         d_opt = torch.optim.RMSprop(self.D.parameters(), lr=lr_init, alpha=0.9)
 
         pd_loss = pd.DataFrame(columns=['epoch', 'd_loss', 'g_loss'])
-        path_loss = "num_folder/loss/loss.csv"
+        path_loss = "../num_folder/loss/loss.csv"
         pd_loss.to_csv(path_loss, index=False)
 
         for epoch in range(epochs):
@@ -119,17 +119,31 @@ class ArtGAN:
                 # gen fakes
                 y_fake = utils.fake_v(b_s, self.num_classes)
                 # print("y_fake = ", y_fake.size())
+
+                t_zeros = torch.zeros(b_s, 1)
+                k_hot = F.one_hot(k, self.num_classes + 1)
+                # print("k_hot = ", k_hot.size())
+                # This other cuda is so that y_k_hot is created correctly
+
+                y_fake = y_fake.type(torch.int64)
+                y_k_hot = F.one_hot(y_fake, self.num_classes + 1)
+
                 if cuda:
                     y_k = y_k.type(torch.cuda.FloatTensor)
                     x_r = x_r.type(torch.cuda.FloatTensor)
                     k = k.type(torch.cuda.LongTensor)
                     z_hat = z_hat.type(torch.cuda.FloatTensor)
                     y_k = y_k.type(torch.cuda.FloatTensor)
+                    k_hot = k_hot.type(torch.cuda.FloatTensor)
+                    y_k_hot = y_k_hot.type(torch.cuda.FloatTensor)
+                    t_zeros = t_zeros.type(torch.cuda.FloatTensor)
+
+                else:
+                    k_hot = k_hot.type(torch.FloatTensor)
+                    y_k_hot = y_k_hot.type(torch.FloatTensor)
+
                 # calculate X_hat
-                in_G = torch.cat([z_hat, y_k.type(torch.cuda.FloatTensor)], 1)
-                k_hot = F.one_hot(k, self.num_classes + 1)
-                # print("k_hot = ", k_hot.size())
-                y_k_hot = F.one_hot(y_fake.type(torch.int64), self.num_classes + 1)
+                in_G = torch.cat([z_hat, y_k], 1)
                 # print("y_k_hot = ", y_k_hot.size())
                 # calculate Y
                 y = self.D(x_r)
@@ -137,8 +151,8 @@ class ArtGAN:
                 x_hat = self.G(in_G)
                 y_hat = self.D(x_hat)
                 # update D
-                d_real_loss = F.binary_cross_entropy(y, k_hot.type(torch.cuda.FloatTensor))
-                d_fake_loss = F.binary_cross_entropy(y_hat, y_k_hot.type(torch.cuda.FloatTensor))
+                d_real_loss = F.binary_cross_entropy(y, k_hot)
+                d_fake_loss = F.binary_cross_entropy(y_hat, y_k_hot)
                 d_loss = d_real_loss + d_fake_loss
                 d_loss_l.append(d_loss.item())
                 d_loss.backward(retain_graph=True)
@@ -151,7 +165,7 @@ class ArtGAN:
                 new_y_hat = self.D(x_hat)
                 # print("new_y_hat = ", new_y_hat.size())
                 new_y_k_hot = torch.cat(
-                    [y_k.type(torch.cuda.FloatTensor), torch.zeros(b_s, 1).type(torch.cuda.FloatTensor)], 1)
+                    [y_k, t_zeros], 1)
                 # print("new_y_k_hot = ", new_y_k_hot.size())
                 g_loss_adv = F.binary_cross_entropy(new_y_hat, new_y_k_hot)
 

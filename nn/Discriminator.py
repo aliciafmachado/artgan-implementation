@@ -26,7 +26,7 @@ class clsNet(nn.Module):
         )
 
     def forward(self, x):
-        out = self.features(out)
+        out = self.features(x)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out
