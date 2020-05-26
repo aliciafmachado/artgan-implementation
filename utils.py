@@ -40,14 +40,14 @@ def exp_lr_scheduler(optimizer, epoch, init_lr=0.001, lr_decay_epoch=80):
     return optimizer
 
 
-def gen_y_test(test_num=10):
+def gen_y_test(n_classes, test_num=10):
     # defined only for multiple of 10
     z = torch.randn(test_num, 100)
-    y = torch.zeros(test_num, 10)
+    y = torch.zeros(test_num, n_classes)
     l = []
     for i, row in enumerate(y):
-        row[i % 10] = 1
-        l.append(i % 10)
+        row[i % n_classes] = 1
+        l.append(i % n_classes)
     return torch.cat([z, y], 1).type(torch.cuda.FloatTensor), l
 
 
@@ -58,7 +58,7 @@ def save_img(G, D, epoch, classes, test_num=20, path=None):
     if not os.path.exists(path_img):
         os.makedirs(path_img)
 
-    y, l = gen_y_test(test_num=test_num)
+    y, l = gen_y_test(len(classes), test_num=test_num)
     imgs = G(y)
     output = D(imgs)
     probs, predicted = torch.max(output.data, 1)

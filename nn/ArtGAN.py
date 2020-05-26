@@ -97,6 +97,8 @@ class ArtGAN:
             os.makedirs(path_loss_folder)
         pd_loss.to_csv(path_loss, index=False)
 
+        utils.save_img(self.G, self.D, 0, classes, path=path)
+
         for epoch in range(epochs):
             # Save loss
             g_loss_l = []
