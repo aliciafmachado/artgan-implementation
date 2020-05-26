@@ -50,6 +50,7 @@ def main():
     with open('../wikiart/' + class_dataset + '_class.txt', 'r') as f:
         classes = tuple([line.strip() for line in f])
     n_classes = len(classes)
+    classes.append("fake")
 
     batch_size = 128
     trainloader_wikiart = torch.utils.data.DataLoader(trainset_wikiart, batch_size=batch_size, shuffle=True)

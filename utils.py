@@ -58,7 +58,7 @@ def save_img(G, D, epoch, classes, test_num=20, path=None):
     if not os.path.exists(path_img):
         os.makedirs(path_img)
 
-    y, l = gen_y_test(len(classes), test_num=test_num)
+    y, l = gen_y_test(len(classes) - 1 , test_num=test_num)
     imgs = G(y)
     output = D(imgs)
     probs, predicted = torch.max(output.data, 1)
