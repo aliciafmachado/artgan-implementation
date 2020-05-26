@@ -12,6 +12,9 @@ from torchvision import transforms, utils
 
 from nn.ArtGAN import ArtGAN
 from WikiartDataset import WikiartDataset
+from PIL import Image, ImageFile
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 def main():
     # We set random seed so it's reproducible
