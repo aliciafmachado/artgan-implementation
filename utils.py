@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 import random
 import numpy as np
 
@@ -50,10 +49,10 @@ def gen_y_test(test_num=10):
     return torch.cat([z, y], 1).type(torch.cuda.FloatTensor), l
 
 
-def save_img(G, D, epoch, test_num=20):
+def save_img(G, D, epoch, test_num=20, path=None):
     G.eval()
     D.eval()
-    path_img = "../wikiart/num_folder/images/epoch_" + str(epoch)
+    path_img = path + "/Wikiart_images/epoch_" + str(epoch)
     if not os.path.exists(path_img):
         os.makedirs(path_img)
 

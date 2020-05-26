@@ -5,6 +5,7 @@ import torch
 import random
 import torchvision
 import os
+import argparse
 
 from pathlib import Path
 from torchvision import transforms, utils
@@ -18,15 +19,17 @@ def main():
     random.seed(seed)
     torch.manual_seed(seed)
 
-    # Local path
-    path = Path().absolute()
+    # Parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument("class_dataset", type=str)
+    parser.add_argument("version", type=int)
+    args = parser.parse_args()
 
     # Training using wikiart dataset
-    class_dataset = "style"  # style - artist - genre
-    version = 1  # number of the version
-    num_classes = 27  # style: 27 - artist: 23 - genre: 10
+    class_dataset = args.class_dataset  # style - artist - genre
+    version = args.version  # number of the version
 
-    num_folder = class_dataset + "_v" + str(version)
+    num_folder = "../save/" + class_dataset + "_v" + str(version)
     # Check if you are in the folder Deep_Learning_Dataset
     if not os.path.exists(num_folder):
         os.makedirs(num_folder)
@@ -59,8 +62,10 @@ def main():
         print("using cuda")
         net.cuda()
 
-    d_loss_l, g_loss_l = net.train(trainloader_wikiart, None, epochs=1, batch_size=batch_size, cuda=use_cuda and
-                                   torch.cuda.is_available())
+    print("Beginning training . . .")
+
+    d_loss_l, g_loss_l = net.train(trainloader_wikiart, None, epochs=100, batch_size=batch_size, cuda=use_cuda and
+                                   torch.cuda.is_available(), path=num_folder)
 
     print("Ended!")
 

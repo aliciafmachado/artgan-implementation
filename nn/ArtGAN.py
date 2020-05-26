@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch.nn.functional as F
+import os
 from torchvision import transforms
 from tqdm import tqdm
 from nn.Discriminator import clsNet, Enc, Discriminator
@@ -70,7 +71,7 @@ class ArtGAN:
         self.G.cuda()
 
     def train(self, trainloader, testloader, epochs=10,
-              img_interval=1, batch_size=64, cuda=True):
+              img_interval=1, batch_size=64, cuda=True, path=None):
         """
         Training function
         :param optimizers: used optimizers (2 entries)
@@ -90,7 +91,10 @@ class ArtGAN:
         d_opt = torch.optim.RMSprop(self.D.parameters(), lr=lr_init, alpha=0.9)
 
         pd_loss = pd.DataFrame(columns=['epoch', 'd_loss', 'g_loss'])
-        path_loss = "../num_folder/loss/loss.csv"
+        path_loss_folder = path + "/Wikiart_loss"
+        path_loss = path_loss_folder + "/loss.csv"
+        if not os.path.exists(path_loss_folder):
+            os.makedirs(path_loss_folder)
         pd_loss.to_csv(path_loss, index=False)
 
         for epoch in range(epochs):
@@ -190,8 +194,11 @@ class ArtGAN:
 
             # print image
             if ((epoch + 1) % img_interval == 0):
-                utils.save_img(self.G, self.D, epoch)
-                name_net = "Wikiart_net/nn_" + str(epoch) + ".pt"
+                utils.save_img(self.G, self.D, epoch, path=path)
+                name_net_folder = path + "/Wikiart_nets"
+                name_net = name_net_folder + "/nn_" + str(epoch) + ".pt"
+                if not os.path.exists(name_net_folder):
+                    os.makedirs(name_net_folder)
                 torch.save({'epoch': epoch,
                             'G': self.G.state_dict(),
                             'D': self.D.state_dict(),
