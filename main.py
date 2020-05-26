@@ -67,7 +67,7 @@ def main():
 
     print("Beginning training . . .")
 
-    d_loss_l, g_loss_l = net.train(trainloader_wikiart, None, epochs=100, batch_size=batch_size, cuda=use_cuda and
+    d_loss_l, g_loss_l = net.train(trainloader_wikiart, None, classes, epochs=100, batch_size=batch_size, cuda=use_cuda and
                                    torch.cuda.is_available(), path=num_folder)
 
     print("Ended!")

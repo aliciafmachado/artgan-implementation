@@ -70,7 +70,7 @@ class ArtGAN:
         self.D.cuda()
         self.G.cuda()
 
-    def train(self, trainloader, testloader, epochs=10,
+    def train(self, trainloader, testloader, classes, epochs=10,
               img_interval=1, batch_size=64, cuda=True, path=None):
         """
         Training function
@@ -194,7 +194,7 @@ class ArtGAN:
 
             # print image
             if ((epoch + 1) % img_interval == 0):
-                utils.save_img(self.G, self.D, epoch, path=path)
+                utils.save_img(self.G, self.D, epoch, classes,path=path)
                 name_net_folder = path + "/Wikiart_nets"
                 name_net = name_net_folder + "/nn_" + str(epoch) + ".pt"
                 if not os.path.exists(name_net_folder):

@@ -1,6 +1,8 @@
 import torch
 import random
 import numpy as np
+import os
+import matplotlib.pyplot as plt
 
 
 def gen_z(batch_size, d):
@@ -49,7 +51,7 @@ def gen_y_test(test_num=10):
     return torch.cat([z, y], 1).type(torch.cuda.FloatTensor), l
 
 
-def save_img(G, D, epoch, test_num=20, path=None):
+def save_img(G, D, epoch, classes, test_num=20, path=None):
     G.eval()
     D.eval()
     path_img = path + "/Wikiart_images/epoch_" + str(epoch)
