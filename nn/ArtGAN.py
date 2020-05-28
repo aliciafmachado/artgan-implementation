@@ -97,8 +97,6 @@ class ArtGAN:
             os.makedirs(path_loss_folder)
         pd_loss.to_csv(path_loss, index=False)
 
-        utils.save_img(self.G, self.D, 1, classes, path=path, test_num=len(classes))
-
         for epoch in range(epochs):
             # Save loss
             g_loss_l = []
@@ -196,7 +194,7 @@ class ArtGAN:
 
             # print image
             if ((epoch + 1) % img_interval == 0):
-                utils.save_img(self.G, self.D, epoch, classes,path=path, test_num=len(classes))
+                utils.save_img(self.G, self.D, epoch, classes,path=path, test_num=len(classes)-1)
                 name_net_folder = path + "/Wikiart_nets"
                 name_net = name_net_folder + "/nn_" + str(epoch) + ".pt"
                 if not os.path.exists(name_net_folder):
