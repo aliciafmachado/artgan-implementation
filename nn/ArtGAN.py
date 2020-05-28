@@ -97,20 +97,10 @@ class ArtGAN:
             os.makedirs(path_loss_folder)
         pd_loss.to_csv(path_loss, index=False)
 
-        if ((epoch + 1) % img_interval == 0):
-            print("len_classes save")
-            print(len(classes) - 1)
-            utils.save_img(self.G, self.D, epoch, classes, path=path, test_num=len(classes) - 1)
-            name_net_folder = path + "/Wikiart_nets"
-            name_net = name_net_folder + "/nn_" + str(epoch) + ".pt"
-            if not os.path.exists(name_net_folder):
-                os.makedirs(name_net_folder)
-            torch.save({'epoch': epoch,
-                        'G': self.G.state_dict(),
-                        'D': self.D.state_dict(),
-                        'opt_G': g_opt.state_dict(),
-                        'opt_D': d_opt.state_dict(),
-                        }, name_net)
+
+        print("len_classes save")
+        print(len(classes) - 1)
+        utils.save_img(self.G, self.D, 7, classes, path=path, test_num=len(classes) - 1)
 
         for epoch in range(epochs):
             # Save loss
