@@ -45,6 +45,7 @@ def main():
         ])
 
     # Choice of kind of dataset
+    print("Creating dataset with wikiart")
     trainset_wikiart = WikiartDataset(0, class_dataset + "_train.csv", "../wikiart/", 'Train', transform)
     testset_wikiart = WikiartDataset(0, class_dataset + "_val.csv", "../wikiart/", 'Test', transform)
     with open('../wikiart/' + class_dataset + '_class.txt', 'r') as f:
@@ -54,6 +55,7 @@ def main():
     n_classes = len(classes) - 1
 
     batch_size = 128
+    print("Calling loader")
     trainloader_wikiart = torch.utils.data.DataLoader(trainset_wikiart, batch_size=batch_size, shuffle=True)
     testloader_wikiart = torch.utils.data.DataLoader(testset_wikiart, batch_size=batch_size, shuffle=True)
 
