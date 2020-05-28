@@ -87,9 +87,11 @@ class ArtGAN:
 
         lr_init = 0.001
 
+        print("Initializing optimizers")
         g_opt = torch.optim.RMSprop(self.G.parameters(), lr=lr_init, alpha=0.9)
         d_opt = torch.optim.RMSprop(self.D.parameters(), lr=lr_init, alpha=0.9)
 
+        print("Initializing loss dataframe")
         pd_loss = pd.DataFrame(columns=['epoch', 'd_loss', 'g_loss'])
         path_loss_folder = path + "/Wikiart_loss"
         path_loss = path_loss_folder + "/loss.csv"
@@ -97,6 +99,7 @@ class ArtGAN:
             os.makedirs(path_loss_folder)
         pd_loss.to_csv(path_loss, index=False)
 
+        print("Beginning epochs . . .")
         for epoch in range(epochs):
             # Save loss
             g_loss_l = []
@@ -192,11 +195,6 @@ class ArtGAN:
             pd_loss = pd_loss.append(pd.DataFrame(data=d), ignore_index=True)
             pd_loss.to_csv(path_loss, index=False)
 
-            print(len(classes) - 1)
-            utils.save_img(self.G, self.D, epoch, classes, path=path, test_num=len(classes) - 1)
-            print("passed")
-            break
-
             # print image
             if ((epoch + 1) % img_interval == 0):
                 utils.save_img(self.G, self.D, epoch, classes, path=path, test_num=len(classes)-1)
@@ -210,6 +208,6 @@ class ArtGAN:
                             'opt_G': g_opt.state_dict(),
                             'opt_D': d_opt.state_dict(),
                             }, name_net)
-        
+
         return d_loss_l, g_loss_l
 
