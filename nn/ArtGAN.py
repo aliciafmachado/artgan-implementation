@@ -109,8 +109,6 @@ class ArtGAN:
             d_opt = utils.exp_lr_scheduler(d_opt, epoch)
             g_opt = utils.exp_lr_scheduler(g_opt, epoch)
 
-            utils.save_img(self.G, self.D, 0, classes, path=path, test_num=len(classes) - 1)
-
             # import tqdm
             for i, data in enumerate(tqdm(trainloader), 0):
 
