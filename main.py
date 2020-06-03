@@ -63,19 +63,23 @@ def main():
     trainloader_wikiart = torch.utils.data.DataLoader(trainset_wikiart, batch_size=batch_size, shuffle=True)
     testloader_wikiart = torch.utils.data.DataLoader(testset_wikiart, batch_size=batch_size, shuffle=True)
 
+    use_cuda = True
+
     if args.retrain:
         checkpoint = torch.load(args.retrain)
         gen = Generator(zNet(input_size=100 + n_classes), Dec())
         dis = Discriminator(clsNet(num_classes=n_classes), Enc())
+        if(use_cuda and torch.cuda.is_available()):
+            gen.cuda()
+            dis.cuda()
         g_op = torch.optim.RMSprop(gen.parameters(), lr=0.001, alpha=0.9)
         d_op = torch.optim.RMSprop(dis.parameters(), lr=0.001, alpha=0.9)
         epo = checkpoint['epoch']
-        d_op = ut.exp_lr_scheduler(d_op, epo)
-        g_op = ut.exp_lr_scheduler(g_op, epo)
         gen.load_state_dict(checkpoint["G"])
         dis.load_state_dict(checkpoint["D"])
         d_op.load_state_dict(checkpoint["opt_D"])
         g_op.load_state_dict(checkpoint["opt_G"])
+
         net = ArtGAN(img_size=64, input_dim_enc=3,
                      z_dim=100, num_classes=n_classes,
                      out_dim_zNet=1024, G=gen, D=dis, retrain=True)
@@ -84,8 +88,6 @@ def main():
         net = ArtGAN(img_size=64, input_dim_enc=3,
                      z_dim=100, num_classes=n_classes,
                      out_dim_zNet=1024)
-
-    use_cuda = True
 
     if use_cuda and torch.cuda.is_available():
         print("using cuda")
