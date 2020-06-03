@@ -93,11 +93,11 @@ def main():
 
     print("Beginning training . . .")
     if args.retrain:
-        d_loss_l, g_loss_l = net.train(trainloader_wikiart, None, classes, epochs=100, batch_size=batch_size,
+        d_loss_l, g_loss_l = net.train(trainloader_wikiart, None, classes, epochs=100,
                                        cuda=use_cuda and torch.cuda.is_available(), path=num_folder, g_op=g_op,
                                        d_op=d_op, init_epoch=epo + 1)
     else:
-        d_loss_l, g_loss_l = net.train(trainloader_wikiart, None, classes, epochs=100, batch_size=batch_size,
+        d_loss_l, g_loss_l = net.train(trainloader_wikiart, None, classes, epochs=100,
                                        cuda=use_cuda and torch.cuda.is_available(), path=num_folder)
 
     print("Ended!")
