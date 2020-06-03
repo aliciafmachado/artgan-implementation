@@ -24,7 +24,8 @@ class ArtGAN:
                  num_classes=10,
                  out_dim_zNet=1024,
                  G=None,
-                 D=None):
+                 D=None,
+                 retrain=False):
         """
         ArtGAN constructor
         :param img_size:
@@ -50,6 +51,7 @@ class ArtGAN:
             self.dec = Dec()
             self.D = Discriminator(self.clsnet, self.enc)
             self.G = Generator(self.znet, self.dec)
+            self.retrain = retrain
 
         else:
             # Inputs
@@ -64,6 +66,7 @@ class ArtGAN:
                 self.z_dim = self.out_size_enc - self.num_classes
             self.G = G
             self.D = D
+            self.retrain = retrain
 
     def cuda(self):
 
@@ -71,7 +74,8 @@ class ArtGAN:
         self.G.cuda()
 
     def train(self, trainloader, testloader, classes, epochs=10,
-              img_interval=1, batch_size=64, cuda=True, path=None):
+              img_interval=1, cuda=True, path=None, g_op=None,
+              d_op=None, init_epoch=0):
         """
         Training function
         :param optimizers: used optimizers (2 entries)
@@ -88,19 +92,26 @@ class ArtGAN:
         lr_init = 0.001
 
         print("Initializing optimizers")
-        g_opt = torch.optim.RMSprop(self.G.parameters(), lr=lr_init, alpha=0.9)
-        d_opt = torch.optim.RMSprop(self.D.parameters(), lr=lr_init, alpha=0.9)
+        if self.retrain:
+            g_opt = g_op
+            d_opt = d_op
+        else:
+            g_opt = torch.optim.RMSprop(self.G.parameters(), lr=lr_init, alpha=0.9)
+            d_opt = torch.optim.RMSprop(self.D.parameters(), lr=lr_init, alpha=0.9)
 
         print("Initializing loss dataframe")
         pd_loss = pd.DataFrame(columns=['epoch', 'd_loss', 'g_loss'])
         path_loss_folder = path + "/Wikiart_loss"
-        path_loss = path_loss_folder + "/loss.csv"
+        if self.retrain:
+            path_loss = path_loss_folder + "/loss_retrain.csv"
+        else:
+            path_loss = path_loss_folder + "/loss.csv"
         if not os.path.exists(path_loss_folder):
             os.makedirs(path_loss_folder)
         pd_loss.to_csv(path_loss, index=False)
 
         print("Beginning epochs . . .")
-        for epoch in range(epochs):
+        for epoch in range(init_epoch, epochs):
             # Save loss
             g_loss_l = []
             d_loss_l = []

@@ -11,6 +11,8 @@ from pathlib import Path
 from torchvision import transforms, utils
 
 from nn.ArtGAN import ArtGAN
+from nn.Generator import Generator, Dec, zNet
+from nn.Discriminator import Discriminator, Enc, clsNet
 from WikiartDataset import WikiartDataset
 from PIL import Image, ImageFile
 
@@ -26,6 +28,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("class_dataset", type=str)
     parser.add_argument("version", type=int)
+    parser.add_argument("--retrain", type=str, default=None)
     args = parser.parse_args()
 
     # Training using wikiart dataset
@@ -59,9 +62,27 @@ def main():
     trainloader_wikiart = torch.utils.data.DataLoader(trainset_wikiart, batch_size=batch_size, shuffle=True)
     testloader_wikiart = torch.utils.data.DataLoader(testset_wikiart, batch_size=batch_size, shuffle=True)
 
-    net = ArtGAN(img_size=64, input_dim_enc=3,
-                 z_dim=100, num_classes=n_classes,
-                 out_dim_zNet=1024)
+    if args.retrain:
+        checkpoint = torch.load(args.retrain)
+        gen = Generator(zNet(input_size=100 + n_classes), Dec())
+        dis = Discriminator(clsNet(num_classes=n_classes), Enc())
+        g_op = torch.optim.RMSprop(gen.parameters(), lr=0.001, alpha=0.9)
+        d_op = torch.optim.RMSprop(dis.parameters(), lr=0.001, alpha=0.9)
+        epo = checkpoint['epoch']
+        d_op = utils.exp_lr_scheduler(d_op, epo)
+        g_op = utils.exp_lr_scheduler(g_op, epo)
+        gen.load_state_dict(checkpoint["G"])
+        dis.load_state_dict(checkpoint["D"])
+        d_op.load_state_dict(checkpoint["opt_D"])
+        g_op.load_state_dict(checkpoint["opt_G"])
+        net = ArtGAN(img_size=64, input_dim_enc=3,
+                     z_dim=100, num_classes=n_classes,
+                     out_dim_zNet=1024, G=gen, D=dis, retrain=True)
+
+    else:
+        net = ArtGAN(img_size=64, input_dim_enc=3,
+                     z_dim=100, num_classes=n_classes,
+                     out_dim_zNet=1024)
 
     use_cuda = True
 
@@ -70,9 +91,13 @@ def main():
         net.cuda()
 
     print("Beginning training . . .")
-
-    d_loss_l, g_loss_l = net.train(trainloader_wikiart, None, classes, epochs=100, batch_size=batch_size, cuda=use_cuda and
-                                   torch.cuda.is_available(), path=num_folder)
+    if args.retrain:
+        d_loss_l, g_loss_l = net.train(trainloader_wikiart, None, classes, epochs=100, batch_size=batch_size,
+                                       cuda=use_cuda and torch.cuda.is_available(), path=num_folder, g_op=g_op,
+                                       d_op=d_op, init_epoch=epo + 1)
+    else:
+        d_loss_l, g_loss_l = net.train(trainloader_wikiart, None, classes, epochs=100, batch_size=batch_size,
+                                       cuda=use_cuda and torch.cuda.is_available(), path=num_folder)
 
     print("Ended!")
 
