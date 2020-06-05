@@ -48,8 +48,10 @@ def gen_y_test(n_classes, test_num=10):
     for i, row in enumerate(y):
         row[i % n_classes] = 1
         l.append(i % n_classes)
-    return torch.cat([z, y], 1).type(torch.cuda.FloatTensor), l
-
+    if torch.cuda.is_available():
+        return torch.cat([z, y], 1).type(torch.cuda.FloatTensor), l
+    else:
+        return torch.cat([z, y], 1).type(torch.FloatTensor), l
 
 def save_img(G, D, epoch, classes, test_num=20, path=None):
     G.eval()

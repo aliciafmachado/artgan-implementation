@@ -69,7 +69,7 @@ def main():
         checkpoint = torch.load(args.retrain)
         gen = Generator(zNet(input_size=100 + n_classes), Dec())
         dis = Discriminator(clsNet(num_classes=n_classes), Enc())
-        if(use_cuda and torch.cuda.is_available()):
+        if use_cuda and torch.cuda.is_available():
             gen.cuda()
             dis.cuda()
         g_op = torch.optim.RMSprop(gen.parameters(), lr=0.001, alpha=0.9)
