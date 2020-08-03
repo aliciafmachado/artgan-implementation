@@ -3,7 +3,7 @@ Project of Deep Learning: Implementation of neural network ArtGAN
 
 We implement the article presented here: https://arxiv.org/pdf/1702.03410.pdf
 
-Project in colaboration with Iago Martinelli Lopes (maicken)
+Project in colaboration with Iago Martinelli Lopes (Maicken)
 
 HOW TO USE:
 - First get the dataset Wikiart which is disponible at: http://web.fsktm.um.edu.my/~cschan/source/ICIP2017/wikiart.zip
