@@ -15,7 +15,3 @@ HOW TO USE:
 Tips:
 - You may use aria2 to download the dataset if through command line, since it's faster
 - You may also use tmux to leave the process in background
-
-Observations:
-- The script for installing all libraries is still being created
-- The cifar-10 jupyter notebook can be used but the wikiart notebook is not complete yet
