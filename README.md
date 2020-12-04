@@ -15,3 +15,13 @@ HOW TO USE:
 Tips:
 - You may use aria2 to download the dataset if through command line, since it's faster
 - You may also use tmux to leave the process in background
+
+<!---
+Results:
+We show some of our results:
+put grid with style results
+put grid with genre results
+put grid with style results 
+Possible improvements:
+Stop discriminator training when it's getting better than the generator
+-->
