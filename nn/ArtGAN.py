@@ -33,6 +33,7 @@ class ArtGAN:
         :param z_dim:
         :param num_classes:
         """
+
         if G is None and D is None:
             # Inputs
             self.img_size = img_size
@@ -125,24 +126,25 @@ class ArtGAN:
 
                 # zero grad
                 d_opt.zero_grad()
+
                 # get the inputs
                 x_r, k = data
                 b_s = len(k)
+
                 # generate z_hat
                 z_hat = utils.gen_z(b_s, self.z_dim)
-                # print("z_hat = ", z_hat.size())
+
                 # generate Y_k and its label
                 y_k = utils.gen_yk(b_s, self.num_classes)
-                # print("y_k = ", y_k.size())
+
                 # gen fakes
                 y_fake = utils.fake_v(b_s, self.num_classes)
                 # print("y_fake = ", y_fake.size())
 
                 t_zeros = torch.zeros(b_s, 1)
                 k_hot = F.one_hot(k, self.num_classes + 1)
-                # print("k_hot = ", k_hot.size())
+                
                 # This other cuda is so that y_k_hot is created correctly
-
                 y_fake = y_fake.type(torch.int64)
                 y_k_hot = F.one_hot(y_fake, self.num_classes + 1)
 
@@ -162,12 +164,14 @@ class ArtGAN:
 
                 # calculate X_hat
                 in_G = torch.cat([z_hat, y_k], 1)
-                # print("y_k_hot = ", y_k_hot.size())
+
                 # calculate Y
                 y = self.D(x_r)
+
                 # Calculate Y_hat
                 x_hat = self.G(in_G)
                 y_hat = self.D(x_hat)
+
                 # update D
                 d_real_loss = F.binary_cross_entropy(y, k_hot)
                 d_fake_loss = F.binary_cross_entropy(y_hat, y_k_hot)
@@ -181,16 +185,15 @@ class ArtGAN:
 
                 # adversarial loss
                 new_y_hat = self.D(x_hat)
-                # print("new_y_hat = ", new_y_hat.size())
                 new_y_k_hot = torch.cat(
                     [y_k, t_zeros], 1)
-                # print("new_y_k_hot = ", new_y_k_hot.size())
+                
                 g_loss_adv = F.binary_cross_entropy(new_y_hat, new_y_k_hot)
 
                 # L2 loss
                 # calculate z
                 z = self.D.enc(x_r)
-                # print("z = ", z.size())
+
                 # calculate X_hat_z
                 x_hat_z = self.G.dec(z)
                 g_loss_l2 = torch.mean((x_hat_z - x_r) ** 2)
