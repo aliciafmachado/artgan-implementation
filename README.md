@@ -66,14 +66,4 @@ Here we show the results for CIFAR-10. Each image corresponds to a label in the 
 
 Here, we show our Discriminator and Generator loss for 50 epochs of training:
 
-![alt text](https://github.com/aliciafmachado/artgan-implementation/blob/master/results/images/cifar_loss.png "CIFAR-10 loss")
-
-<!---
-Results:
-We show some of our results:
-put grid with style results
-put grid with genre results
-put grid with style results 
-Possible improvements:
-Stop discriminator training when it's getting better than the generator
--->
+![alt text](https://github.com/aliciafmachado/artgan-implementation/blob/master/results/images/cifar-10_loss.png "CIFAR-10 loss")
