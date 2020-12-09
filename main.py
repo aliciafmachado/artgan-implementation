@@ -26,6 +26,9 @@ def main():
     torch.manual_seed(seed)
 
     # Parser
+    # We say with which class dataset we are working with
+    # We also say which version to save with and if
+    # we retraining
     parser = argparse.ArgumentParser()
     parser.add_argument("class_dataset", type=str)
     parser.add_argument("version", type=int)
@@ -58,6 +61,7 @@ def main():
     classes = tuple(cl)
     n_classes = len(classes) - 1
 
+    # We determine the batch size and call the loader
     batch_size = 128
     print("Calling loader")
     trainloader_wikiart = torch.utils.data.DataLoader(trainset_wikiart, batch_size=batch_size, shuffle=True)
@@ -65,13 +69,16 @@ def main():
 
     use_cuda = True
 
+    # If we are retraining, we have to load the checkpoints
     if args.retrain:
         checkpoint = torch.load(args.retrain)
         gen = Generator(zNet(input_size=100 + n_classes), Dec())
         dis = Discriminator(clsNet(num_classes=n_classes), Enc())
+
         if use_cuda and torch.cuda.is_available():
             gen.cuda()
             dis.cuda()
+
         g_op = torch.optim.RMSprop(gen.parameters(), lr=0.001, alpha=0.9)
         d_op = torch.optim.RMSprop(dis.parameters(), lr=0.001, alpha=0.9)
         epo = checkpoint['epoch']
@@ -84,15 +91,18 @@ def main():
                      z_dim=100, num_classes=n_classes,
                      out_dim_zNet=1024, G=gen, D=dis, retrain=True)
 
+    # If we are not loading the neural network, we create one
     else:
         net = ArtGAN(img_size=64, input_dim_enc=3,
                      z_dim=100, num_classes=n_classes,
                      out_dim_zNet=1024)
 
+    # We say if we are using cuda
     if use_cuda and torch.cuda.is_available():
         print("using cuda")
         net.cuda()
 
+    # We begin the training
     print("Beginning training . . .")
     if args.retrain:
         d_loss_l, g_loss_l = net.train(trainloader_wikiart, None, classes, epochs=100,
